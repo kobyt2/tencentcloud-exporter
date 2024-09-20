@@ -85,6 +85,7 @@ var QcloudNamespace = []string{"COS", "CDN", "QAAP", "WAF"}
 type TencentCredential struct {
 	AccessKey   string `yaml:"access_key"`
 	SecretKey   string `yaml:"secret_key"`
+	EncryptionKey string `yaml:"encryption_key"`
 	Role        string `yaml:"role"`
 	Region      string `yaml:"region"`
 	Token       string `yaml:"token"`
@@ -156,20 +157,36 @@ func NewConfig() *TencentConfig {
 }
 
 func (c *TencentConfig) LoadFile(filename string) error {
-	c.Filename = filename
-	content, err := ioutil.ReadFile(c.Filename)
-	if err != nil {
-		return err
-	}
-	if err = yaml.UnmarshalStrict(content, c); err != nil {
-		return err
-	}
-	if err = c.check(); err != nil {
-		return err
-	}
-	c.fillDefault()
-	return nil
+    c.Filename = filename
+    content, err := ioutil.ReadFile(c.Filename)
+    if err != nil {
+        return err
+    }
+
+    // 解析 YAML 文件
+    if err = yaml.UnmarshalStrict(content, c); err != nil {
+        return err
+    }
+
+    // 假设加密密钥存储在 YAML 中
+    crypto := aes.NewCryptoDB(c.Credential.EncryptionKey) // 直接读取配置中的密钥
+
+    // 解密 access_key 和 secret_key
+    decryptedAccessKey := crypto.Decrypt(c.Credential.AccessKey)
+    decryptedSecretKey := crypto.Decrypt(c.Credential.SecretKey)
+
+    c.Credential.AccessKey = decryptedAccessKey
+    c.Credential.SecretKey = decryptedSecretKey
+
+    // 检查配置文件是否合法
+    if err = c.check(); err != nil {
+        return err
+    }
+
+    c.fillDefault()
+    return nil
 }
+
 
 func (c *TencentConfig) check() (err error) {
 	if c.Credential.AccessKey == "" {
