@@ -9,6 +9,7 @@ import (
 	"github.com/tencentyun/tencentcloud-exporter/pkg/constant"
 	"github.com/tencentyun/tencentcloud-exporter/pkg/util"
 	"gopkg.in/yaml.v2"
+	"github.com/kobyt2/common-services/utils/aes"
 )
 
 const (
